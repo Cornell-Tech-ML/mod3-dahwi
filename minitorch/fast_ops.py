@@ -340,11 +340,28 @@ def _tensor_matrix_multiply(
         None : Fills in `out`
 
     """
+    batch_size, out_rows, out_cols = out_shape
+    inner_dim = a_shape[-1]
+
     a_batch_stride = a_strides[0] if a_shape[0] > 1 else 0
     b_batch_stride = b_strides[0] if b_shape[0] > 1 else 0
+    out_batch_stride = out_strides[0] if out_shape[0] > 1 else 0
 
-    # TODO: Implement for Task 3.2.
-    raise NotImplementedError("Need to implement for Task 3.2")
+    for n in prange(batch_size):
+        for i in range(out_rows):
+            for j in range(out_cols):
+                # Compute dot product for the (i, j) element in the current batch
+                acc = 0.0
+                # Inner loop over the shared dimension (columns of `a` / rows of `b`)
+                for k in range(inner_dim):
+                    # Calculate positions for `a` and `b`
+                    a_pos = n * a_batch_stride + i * a_strides[1] + k * a_strides[2]
+                    b_pos = n * b_batch_stride + k * b_strides[1] + j * b_strides[2]
+                    acc += a_storage[a_pos] * b_storage[b_pos]
+                # Store the result in the output tensor
+                out[n * out_batch_stride + i * out_strides[1] + j * out_strides[2]] = (
+                    acc
+                )
 
 
 tensor_matrix_multiply = njit(_tensor_matrix_multiply, parallel=True)

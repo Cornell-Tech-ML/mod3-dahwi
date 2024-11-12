@@ -47,6 +47,7 @@ class TensorOps:
     @staticmethod
     def matrix_multiply(a: Tensor, b: Tensor) -> Tensor:
         """Matrix multiply"""
+        # ...
         raise NotImplementedError("Not implemented in this assignment")
 
     cuda = False
@@ -230,6 +231,14 @@ class SimpleOps(TensorOps):
     def matrix_multiply(a: "Tensor", b: "Tensor") -> "Tensor":
         """Matrix multiplication"""
         raise NotImplementedError("Not implemented in this assignment")
+        # assert a[-1] == b[-2], (a.shape, b.shape)
+        # out_shape = (a.shape[0], b.shape[1])
+        # out = a.zeros(out_shape)
+        # for i in range(out_shape[0]):
+        #     for j in range(out_shape[1]):
+        #         for k in range(a.shape[1]):
+        #             out[i, j] += a[i, k] * b[k, j]
+        # return out
 
     is_cuda = False
 
