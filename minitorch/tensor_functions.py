@@ -246,23 +246,15 @@ class Permute(Function):
         """Permute the dimensions of the tensor based on the specified order."""
         # Save dims for backward pass
         ctx.save_for_backward(order)
-        # Convert dims to a list
-        order_list = [int(d) for d in order.to_numpy()]
-        # Use the permute function of tensor
-        return t1._new(t1._tensor.permute(*order_list))
+        return t1._new(t1._tensor.permute(*[int(order[i]) for i in range(order.size)]))
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
         """Reverse the permutation for the backward pass."""
         (order,) = ctx.saved_values
-        order_list = [int(d) for d in order.to_numpy()]
-        # Inverse the permutation for the backward pass
-        inverse_dims = [0] * len(order_list)
-        for i, d in enumerate(order_list):
-            inverse_dims[d] = i
-        return grad_output._new(grad_output._tensor.permute(*inverse_dims)), zeros(
-            order.shape
-        )
+        order2 = [a[0] for a in sorted(enumerate([order[i] for i in range(order.size)]), key=lambda x: x[1])]        
+        return grad_output._new(grad_output._tensor.permute(*order2)), 0.0
+        
 
 
 class View(Function):

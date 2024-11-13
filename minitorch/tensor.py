@@ -356,12 +356,12 @@ class Tensor:
     def __rmul__(self, b: TensorLike) -> Tensor:
         return Mul.apply(self._ensure_tensor(b), self)
 
-    def all(self, dim: Optional[TensorLike] = None) -> Tensor:
+    def all(self, dim: Optional[int] = None) -> Tensor:
         r"""Return 1 if all are true"""
         if dim is not None:
-            return All.apply(self, self._ensure_tensor(dim))
+            return All.apply(self.view(self.size), self._ensure_tensor(0))
         else:
-            return All.apply(self)
+            return All.apply(self, self._ensure_tensor(dim))
 
     def is_close(self, b: TensorLike) -> Tensor:
         r"""Return 1 if tensor elements are close to its corresponding elements in b"""
@@ -383,25 +383,25 @@ class Tensor:
         """Exponential function $f(x) = e^x$"""
         return Exp.apply(self)
 
-    def sum(self, dim: Optional[TensorLike] = None) -> Tensor:
+    def sum(self, dim: Optional[int] = None) -> Tensor:
         """Sum the tensor along a specific dimension, or all dimensions if dim is None."""
         if dim is None:
             # Sum over all elements if no dim is provided
-            return Sum.apply(self)  # Summing over all dimensions
+            return Sum.apply(self.contiguous().view(self.size), self._ensure_tensor(0))  # Summing over all dimensions
         else:
             return Sum.apply(self, self._ensure_tensor(dim))
 
-    def view(self, *dim: TensorLike) -> Tensor:
+    def view(self, *shape: int) -> Tensor:
         """Reshape the tensor to the given shape."""
-        return View.apply(self, tensor(dim))
+        return View.apply(self, tensor(list(shape)))
 
-    def permute(self, *dim: TensorLike) -> Tensor:
+    def permute(self, *order: int) -> Tensor:
         """Permutes the tensor with the order of given dims"""
-        return Permute.apply(self, tensor(dim))
+        return Permute.apply(self, tensor(list(order)))
 
-    def mean(self, dim: Optional[TensorLike] = None) -> Tensor:
+    def mean(self, dim: Optional[int] = None) -> Tensor:
         """Calculate the mean of the tensor"""
         if dim is None:
             return self.sum() / self.size
         else:
-            return self.sum(dim) / int(self.shape[int(self._ensure_tensor(dim).item())])
+            return self.sum(dim) / self.shape[dim]
