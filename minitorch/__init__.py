@@ -1,4 +1,4 @@
-"""minitorch package."""
+"""Imports for minitorch package."""
 
 from .testing import MathTest, MathTestVariable  # type: ignore # noqa: F401,F403
 from .fast_ops import *  # noqa: F401,F403

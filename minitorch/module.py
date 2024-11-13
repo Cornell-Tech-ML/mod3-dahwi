@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 
 class Module:
@@ -49,21 +49,17 @@ class Module:
             The name and `Parameter` of each ancestor parameter.
 
         """
-        all_paramaters = list(self._parameters.items())
-        for name, value in self._modules.items():
-            for sub_name, sub_value in value.named_parameters():
-                all_paramaters.append((name + "." + sub_name, sub_value))
-        return all_paramaters
+        result: List[Tuple[str, Parameter]] = []
+        for key, value in self.__dict__["_parameters"].items():
+            result.append((key, value))
+        for key, module in self.__dict__["_modules"].items():
+            for name, value in module.named_parameters():
+                result.append((key + "." + name, value))
+        return result
 
     def parameters(self) -> Sequence[Parameter]:
-        """Enumerate over all the parameters of this module and its descendents.
-
-        Returns
-        -------
-            The `Parameter` of each ancestor parameter.
-
-        """
-        return list([p for name, p in self.named_parameters()])
+        """Enumerate over all the parameters of this module and its descendents."""
+        return [param for _, param in self.named_parameters()]
 
     def add_parameter(self, k: str, v: Any) -> Parameter:
         """Manually add a parameter. Useful helper for scalar parameters.
@@ -99,21 +95,7 @@ class Module:
         return None
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        """Call the module.
-
-        This method allows the module to be called like a function,
-        which in turn calls the forward method with the given arguments.
-
-        Args:
-        ----
-        *args: Positional arguments to pass to the forward method.
-        **kwargs: Keyword arguments to pass to the forward method.
-
-        Returns:
-        -------
-        The result of the forward method.
-
-        """
+        """Calling a module will call the forward method."""
         return self.forward(*args, **kwargs)
 
     def __repr__(self) -> str:
