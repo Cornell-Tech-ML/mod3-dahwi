@@ -340,35 +340,28 @@ def tensor_reduce(
         out_pos = cuda.blockIdx.x
         pos = cuda.threadIdx.x
 
-        # Out of bounds guard
-        if out_pos >= out_size:
-            return
+        if out_pos < out_size:
+            # starting index in out_shape
+            to_index(out_pos, out_shape, out_index)
+            # starting pos in a_storage
+            start = index_to_position(out_index, a_strides)
+            # initialize to reduction starting value
+            cache[pos] = reduce_value
+            for j in range(pos, a_shape[reduce_dim], BLOCK_DIM):
+                a_index = start + j * a_strides[reduce_dim]
+                if a_index < len(a_storage):
+                    cache[pos] = fn(cache[pos], a_storage[a_index])
 
-        # Starting index for this position
-        to_index(out_pos, out_shape, out_index)
-
-        start_pos = index_to_position(out_index, out_strides)
-    
-        # Initialize cache with reduce value
-        cache[pos] = reduce_value
-
-        # Move in steps of BLOCK_DIM along reduce_dim
-        for j in 
-
-        cuda.syncthreads()
-
-        # Reduce within shared memory
-        stride = 1
-        while stride < BLOCK_DIM:
-            index = 2 * stride * pos
-            if index + stride < BLOCK_DIM:
-                cache[index] = fn(cache[index], cache[index + stride])
-            stride *= 2
             cuda.syncthreads()
+            s = 1
+            while s < BLOCK_DIM:
+                if pos % (2 * s) == 0 and pos + s < BLOCK_DIM:
+                    cache[pos] = fn(cache[pos], cache[pos + s])
+                s *= 2
+                cuda.syncthreads()
 
-        # Write to global
-        if pos == 0:
-            out[out_pos] = cache[0]
+            if pos == 0:
+                out[out_pos] = cache[0]
 
     return jit(_reduce)  # type: ignore
 
