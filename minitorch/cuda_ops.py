@@ -408,13 +408,8 @@ def tensor_reduce(
             out_index[reduce_dim] = out_index[reduce_dim] * BLOCK_DIM + pos
             start = index_to_position(out_index, a_strides)
             # initialize to reduction starting value
-            if start < len(a_storage):
+            if out_index[reduce_dim] < a_shape[reduce_dim]: #start < len(a_storage): 
                 cache[pos] = a_storage[start]#fn(reduce_value, a_storage[start])
-            # for j in range(pos, a_shape[reduce_dim], BLOCK_DIM):
-            #     a_index = start + j * a_strides[reduce_dim]
-            #     if a_index < len(a_storage):
-            #         cache[pos] = fn(cache[pos], a_storage[a_index])
-
                 cuda.syncthreads()
             s = 1
             while s < BLOCK_DIM:
