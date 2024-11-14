@@ -404,10 +404,10 @@ def tensor_reduce(
         if out_pos < out_size:
             # starting index in out_shape
             to_index(out_pos, out_shape, out_index)
-            # starting pos in a_storage
+            out_index[reduce_dim] = out_pos * BLOCK_DIM + pos
             start = index_to_position(out_index, a_strides)
             # initialize to reduction starting value
-            if pos < len(a_storage):
+            if start < len(a_storage):
                 cache[pos] = fn(reduce_value, a_storage[start])
             # for j in range(pos, a_shape[reduce_dim], BLOCK_DIM):
             #     a_index = start + j * a_strides[reduce_dim]
