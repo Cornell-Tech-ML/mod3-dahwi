@@ -424,8 +424,6 @@ def tensor_reduce(
             if pos == 0:
                 out[out_pos] = cache[0]
 
-        out[out_pos] = fn()
-
     return jit(_reduce)  # type: ignore
 
 
