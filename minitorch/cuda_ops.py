@@ -30,7 +30,7 @@ Fn = TypeVar("Fn")
 
 
 def device_jit(fn: Fn, **kwargs: Any) -> Fn:
-    """This function uses the Just-In-Time (JIT) compilation to optimize the given function
+    """Uses the Just-In-Time (JIT) compilation to optimize the given function
     for execution on a specific device, such as a GPU. It leverages the `_jit` function
     with the `device` parameter set to `True`.
 
@@ -294,7 +294,7 @@ def tensor_zip(
 
 
 def _sum_practice(out: Storage, a: Storage, size: int) -> None:
-    r"""This is a practice sum kernel to prepare for reduce.
+    r"""Practice sum kernel to prepare for reduce.
 
     Given an array of length $n$ and out of size $n // \text{blockDIM}$
     it should sum up each blockDim values into an out cell.
@@ -404,7 +404,7 @@ def tensor_reduce(
         if out_pos < out_size:
             # starting index in out_shape
             to_index(out_pos, out_shape, out_index)
-            out_index[reduce_dim] = out_pos * BLOCK_DIM + pos
+            out_index[reduce_dim] = out_index[reduce_dim] * BLOCK_DIM + pos
             start = index_to_position(out_index, a_strides)
             # initialize to reduction starting value
             if start < len(a_storage):
@@ -429,7 +429,7 @@ def tensor_reduce(
 
 
 def _mm_practice(out: Storage, a: Storage, b: Storage, size: int) -> None:
-    """This is a practice square MM kernel to prepare for matmul.
+    r"""Practice square MM kernel to prepare for matmul.
 
     Given a storage `out` and two storage `a` and `b`. Where we know
     both are shape [size, size] with strides [size, 1].
