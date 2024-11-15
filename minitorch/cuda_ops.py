@@ -462,9 +462,24 @@ def _mm_practice(out: Storage, a: Storage, b: Storage, size: int) -> None:
 
     """
     BLOCK_DIM = 32
-    # TODO: Implement for Task 3.3.
-    raise NotImplementedError("Need to implement for Task 3.3")
+    a_shared = cuda.shared.array((BLOCK_DIM, BLOCK_DIM), numba.float64)
+    b_shared = cuda.shared.array((BLOCK_DIM, BLOCK_DIM), numba.float64)
 
+    i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
+    j = cuda.blockIdx.y * cuda.blockDim.y + cuda.threadIdx.y
+    local_i = cuda.threadIdx.x
+    local_j = cuda.threadIdx.y
+
+    pos = i * size + j
+    if i < size and j < size:
+        a_shared[local_i, local_j] = a[pos]
+        b_shared[local_i, local_j] = b[pos]
+        cuda.syncthreads()
+
+        acc = 0
+        for k in range(size):
+            acc += a_shared[local_i, k] * b_shared[k, local_j]
+        out[pos] = acc
 
 jit_mm_practice = jit(_mm_practice)
 
@@ -522,17 +537,29 @@ def _tensor_matrix_multiply(
     i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
     j = cuda.blockIdx.y * cuda.blockDim.y + cuda.threadIdx.y
 
+    pos = batch * out_strides[0] + i * out_strides[-2]+ j * out_strides[-1] 
     # The local position in the block.
-    pi = cuda.threadIdx.x
-    pj = cuda.threadIdx.y
+    local_i = cuda.threadIdx.x
+    local_j = cuda.threadIdx.y
 
     # Code Plan:
     # 1) Move across shared dimension by block dim.
     #    a) Copy into shared memory for a matrix.
     #    b) Copy into shared memory for b matrix
     #    c) Compute the dot produce for position c[i, j]
-    # TODO: Implement for Task 3.4.
-    raise NotImplementedError("Need to implement for Task 3.4")
+    acc = 0
+    for k in range(0, a_shape[-1], BLOCK_DIM):
+        if i < a_shape[-2] and k + local_j < a_shape[-1]:
+            a_shared[local_i, local_j] = a_storage[batch * a_batch_stride + i*a_strides[-2]+ (k+local_j)*a_strides[-1]] 
+        if j < b_shape[-1] and k + local_i < b_shape[-2]:
+            b_shared[local_i, local_j] = b_storage[batch * b_batch_stride + (k+local_i)*b_strides[-2] + j*b_strides[-1]] 
+        cuda.syncthreads()
+
+        for local_k in range(BLOCK_DIM):
+            if k + local_k < a_shape[-1] and k + local_k < b_shape[-2]:
+                acc += a_shared[local_i, local_k] * b_shared[local_k, local_j]
+    if pos < out_size:
+        out[pos] = acc
 
 
 tensor_matrix_multiply = jit(_tensor_matrix_multiply)
