@@ -414,14 +414,14 @@ def tensor_reduce(
                     cache[pos] = fn(cache[pos], a_storage[start])
                 else:
                     cache[pos] = a_storage[start]
-            cuda.syncthreads()
+                cuda.syncthreads()
 
-            s = 1
-            while s < BLOCK_DIM:
-                if pos % (2 * s) == 0 and pos + s < BLOCK_DIM:
-                    cache[pos] = fn(cache[pos], cache[pos + s])
-                    cuda.syncthreads()
-                s *= 2
+                s = 1
+                while s < BLOCK_DIM:
+                    if pos % (2 * s) == 0 and pos + s < BLOCK_DIM:
+                        cache[pos] = fn(cache[pos], cache[pos + s])
+                        cuda.syncthreads()
+                    s *= 2
 
             if pos == 0:
                 out[out_pos] = cache[0]
