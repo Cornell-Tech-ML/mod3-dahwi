@@ -400,16 +400,17 @@ def tensor_reduce(
         out_index = cuda.local.array(MAX_DIMS, numba.int32)
         out_pos = cuda.blockIdx.x
         pos = cuda.threadIdx.x
+        i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
 
         if out_pos < out_size:
             # Initialize cache with reduce_value
             cache[pos] = reduce_value
             # starting index in out_shape
             to_index(out_pos, out_shape, out_index)
-            out_index[reduce_dim] = out_index[reduce_dim] * BLOCK_DIM + pos
+            out_index[reduce_dim] = i
             start = index_to_position(out_index, a_strides)
             # Combine reduce_value with a_storage[start] if within bounds
-            if out_index[reduce_dim] < a_shape[reduce_dim]:
+            if i < a_shape[reduce_dim]:
                 if pos == 0:
                     cache[pos] = fn(cache[pos], a_storage[start])
                 else:
