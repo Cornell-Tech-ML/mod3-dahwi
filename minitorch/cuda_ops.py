@@ -547,7 +547,7 @@ def _tensor_matrix_multiply(
     #    a) Copy into shared memory for a matrix.
     #    b) Copy into shared memory for b matrix
     #    c) Compute the dot produce for position c[i, j]
-    acc = 0
+    acc = 0.0
     
     for k in range(0, a_shape[-1], BLOCK_DIM):
         if i < a_shape[-2] and k + local_j < a_shape[-1]:
