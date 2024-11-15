@@ -525,6 +525,7 @@ def _tensor_matrix_multiply(
     """
     a_batch_stride = a_strides[0] if a_shape[0] > 1 else 0
     b_batch_stride = b_strides[0] if b_shape[0] > 1 else 0
+    out_batch_stride = out_strides[0] if out_shape[0] > 1 else 0
     # Batch dimension - fixed
     batch = cuda.blockIdx.z
 
@@ -536,7 +537,7 @@ def _tensor_matrix_multiply(
     i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
     j = cuda.blockIdx.y * cuda.blockDim.y + cuda.threadIdx.y
 
-    pos = batch * out_strides[0] + i * out_strides[-2]+ j * out_strides[-1] 
+    pos = batch * out_batch_stride + i * out_strides[-2]+ j * out_strides[-1] 
     # The local position in the block.
     local_i = cuda.threadIdx.x
     local_j = cuda.threadIdx.y
@@ -547,6 +548,7 @@ def _tensor_matrix_multiply(
     #    b) Copy into shared memory for b matrix
     #    c) Compute the dot produce for position c[i, j]
     acc = 0
+    
     for k in range(0, a_shape[-1], BLOCK_DIM):
         if i < a_shape[-2] and k + local_j < a_shape[-1]:
             a_shared[local_i, local_j] = a_storage[batch * a_batch_stride + i*a_strides[-2]+ (k+local_j)*a_strides[-1]] 
@@ -557,7 +559,7 @@ def _tensor_matrix_multiply(
         for local_k in range(BLOCK_DIM):
             if k + local_k < a_shape[-1] and k + local_k < b_shape[-2]:
                 acc += a_shared[local_i, local_k] * b_shared[local_k, local_j]
-    if pos < out_size:
+    if i < out_shape[-2] and j < out_shape[-1] and pos < out_size:
         out[pos] = acc
 
 
