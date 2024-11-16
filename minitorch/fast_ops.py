@@ -180,15 +180,6 @@ def tensor_map(
         in_shape: Shape,
         in_strides: Strides,
     ) -> None:
-        # for i in prange(len(out)):
-        #     out_index = np.empty(MAX_DIMS, np.int32)
-        #     in_index = np.empty(MAX_DIMS, np.int32)
-        #     if out_strides == in_strides and out_shape == in_shape:
-        #         out[i] = fn(in_storage[i])
-        #     else:
-        #         to_index(i, out_shape, out_index)
-        #         broadcast_index(out_index, out_shape, in_shape, in_index)
-        #         out[i] = fn(in_storage[index_to_position(in_index, in_strides)])
         if np.array_equal(out_strides, in_strides) and np.array_equal(
             out_shape, in_shape
         ):
@@ -293,18 +284,32 @@ def tensor_reduce(
         a_strides: Strides,
         reduce_dim: int,
     ) -> None:
-        reduce_size = a_shape[reduce_dim]
-        reduce_stride = a_strides[reduce_dim]
-
         for i in prange(len(out)):
-            out_index = np.empty(MAX_DIMS, np.int32)
+            out_index = np.empty(MAX_DIMS, dtype=np.int32)
+            reduce_size = a_shape[reduce_dim]
             to_index(i, out_shape, out_index)
-            pos = index_to_position(out_index, a_strides)
-            acc = out[i]
-            for j in range(reduce_size):
-                position = pos + j * reduce_stride
-                acc = fn(acc, float(a_storage[position]))
-            out[i] = acc
+            o = index_to_position(out_index, out_strides)
+
+            # reduce across the reduce_dim
+            j = index_to_position(out_index, a_strides)
+            acc = out[o]
+            step = a_strides[reduce_dim]
+            for _ in range(reduce_size):
+                acc = fn(acc, a_storage[j])
+                j += step
+            out[o] = acc
+        # reduce_size = a_shape[reduce_dim]
+        # reduce_stride = a_strides[reduce_dim]
+
+        # for i in prange(len(out)):
+        #     out_index = np.empty(MAX_DIMS, np.int32)
+        #     to_index(i, out_shape, out_index)
+        #     pos = index_to_position(out_index, a_strides)
+        #     acc = out[i]
+        #     for j in range(reduce_size):
+        #         position = pos + j * reduce_stride
+        #         acc = fn(acc, float(a_storage[position]))
+        #     out[i] = acc
 
     return njit(_reduce, parallel=True)  # type: ignore
 
