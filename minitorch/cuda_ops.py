@@ -247,7 +247,8 @@ def tensor_map(
 def tensor_zip(
     fn: Callable[[float, float], float],
 ) -> Callable[
-    [Storage, Shape, Strides, int, Storage, Shape, Strides, Storage, Shape, Strides], None
+    [Storage, Shape, Strides, int, Storage, Shape, Strides, Storage, Shape, Strides],
+    None,
 ]:
     r"""CUDA higher-order tensor zipWith (or map2) function ::
 
@@ -371,7 +372,9 @@ def sum_practice(a: Tensor) -> TensorData:
 
 def tensor_reduce(
     fn: Callable[[float, float], float],
-) -> Callable[[Storage, Shape, Strides, int, Storage, Shape, Strides, int, float], None]:
+) -> Callable[
+    [Storage, Shape, Strides, int, Storage, Shape, Strides, int, float], None
+]:
     """CUDA higher-order tensor reduce function.
 
     Args:
@@ -480,10 +483,25 @@ def _mm_practice(out: Storage, a: Storage, b: Storage, size: int) -> None:
             acc += a_shared[local_i, k] * b_shared[k, local_j]
         out[pos] = acc
 
+
 jit_mm_practice = jit(_mm_practice)
 
 
 def mm_practice(a: Tensor, b: Tensor) -> TensorData:
+    """Perform matrix multiplication of two tensors using CUDA. The result tensor is
+        initialized on the GPU and the matrix multiplication is performed using a
+        CUDA kernel function `jit_mm_practice`.
+
+    Args:
+    ----
+        a (Tensor): The first input tensor with shape (size, size).
+        b (Tensor): The second input tensor with shape (size, size).
+
+    Returns:
+    -------
+        TensorData: The result of the matrix multiplication as a TensorData object.
+
+    """
     (size, _) = a.shape
     threadsperblock = (THREADS_PER_BLOCK, THREADS_PER_BLOCK)
     blockspergrid = 1
@@ -537,7 +555,7 @@ def _tensor_matrix_multiply(
     i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
     j = cuda.blockIdx.y * cuda.blockDim.y + cuda.threadIdx.y
 
-    pos = batch * out_batch_stride + i * out_strides[-2]+ j * out_strides[-1] 
+    pos = batch * out_batch_stride + i * out_strides[-2] + j * out_strides[-1]
     # The local position in the block.
     local_i = cuda.threadIdx.x
     local_j = cuda.threadIdx.y
@@ -548,12 +566,20 @@ def _tensor_matrix_multiply(
     #    b) Copy into shared memory for b matrix
     #    c) Compute the dot produce for position c[i, j]
     acc = 0.0
-    
+
     for k in range(0, a_shape[-1], BLOCK_DIM):
         if i < a_shape[-2] and k + local_j < a_shape[-1]:
-            a_shared[local_i, local_j] = a_storage[batch * a_batch_stride + i*a_strides[-2]+ (k+local_j)*a_strides[-1]] 
+            a_shared[local_i, local_j] = a_storage[
+                batch * a_batch_stride
+                + i * a_strides[-2]
+                + (k + local_j) * a_strides[-1]
+            ]
         if j < b_shape[-1] and k + local_i < b_shape[-2]:
-            b_shared[local_i, local_j] = b_storage[batch * b_batch_stride + (k+local_i)*b_strides[-2] + j*b_strides[-1]] 
+            b_shared[local_i, local_j] = b_storage[
+                batch * b_batch_stride
+                + (k + local_i) * b_strides[-2]
+                + j * b_strides[-1]
+            ]
         cuda.syncthreads()
 
         for local_k in range(BLOCK_DIM):
