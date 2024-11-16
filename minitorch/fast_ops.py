@@ -285,31 +285,16 @@ def tensor_reduce(
         reduce_dim: int,
     ) -> None:
         for i in prange(len(out)):
-            out_index = np.empty(MAX_DIMS, dtype=np.int32)
             reduce_size = a_shape[reduce_dim]
+            reduce_stride = a_strides[reduce_dim]
+            out_index = np.empty(MAX_DIMS, np.int32)
             to_index(i, out_shape, out_index)
-            o = index_to_position(out_index, out_strides)
-
-            # reduce across the reduce_dim
-            j = index_to_position(out_index, a_strides)
-            acc = out[o]
-            step = a_strides[reduce_dim]
-            for _ in range(reduce_size):
-                acc = fn(acc, a_storage[j])
-                j += step
-            out[o] = acc
-        # reduce_size = a_shape[reduce_dim]
-        # reduce_stride = a_strides[reduce_dim]
-
-        # for i in prange(len(out)):
-        #     out_index = np.empty(MAX_DIMS, np.int32)
-        #     to_index(i, out_shape, out_index)
-        #     pos = index_to_position(out_index, a_strides)
-        #     acc = out[i]
-        #     for j in range(reduce_size):
-        #         position = pos + j * reduce_stride
-        #         acc = fn(acc, float(a_storage[position]))
-        #     out[i] = acc
+            pos = index_to_position(out_index, a_strides)
+            acc = out[i]
+            for j in range(reduce_size):
+                position = pos + j * reduce_stride
+                acc = fn(acc, a_storage[position])
+            out[i] = acc
 
     return njit(_reduce, parallel=True)  # type: ignore
 
