@@ -299,7 +299,6 @@ def tensor_reduce(
         #         j += step
         #     out[o] = acc
 
-
         for i in prange(len(out)):
             reduce_size = a_shape[reduce_dim]
             reduce_stride = a_strides[reduce_dim]
