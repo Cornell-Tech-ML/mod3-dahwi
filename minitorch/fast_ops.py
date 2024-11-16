@@ -300,10 +300,10 @@ def tensor_reduce(
             out_index = np.empty(MAX_DIMS, np.int32)
             to_index(i, out_shape, out_index)
             pos = index_to_position(out_index, a_strides)
-            acc: float = out[i]
+            acc = out[i]
             for j in range(reduce_size):
                 position = pos + j * reduce_stride
-                acc = fn(acc, a_storage[position])
+                acc = fn(acc, float(a_storage[position]))
             out[i] = acc
 
     return njit(_reduce, parallel=True)  # type: ignore
