@@ -31,7 +31,8 @@ The files that will be synced are:
 
         minitorch/tensor_data.py minitorch/tensor_functions.py minitorch/tensor_ops.py minitorch/operators.py minitorch/scalar.py minitorch/scalar_functions.py minitorch/module.py minitorch/autodiff.py minitorch/module.py project/run_manual.py project/run_scalar.py project/run_tensor.py minitorch/operators.py minitorch/module.py minitorch/autodiff.py minitorch/tensor.py minitorch/datasets.py minitorch/testing.py minitorch/optim.py
 
-* Diagnostics Output
+# Task 3.1: Parallelization & Task 3.2: Matrix Multiplication #
+## Diagnostics Output ##
 
 ```
 MAP
@@ -330,7 +331,7 @@ Size: 1024
     gpu: 1.04577
 ```
 
-# Training #
+# Task 3.5: Training #
 ## SMALL (HIDDEN SIZE = 100) ##
 ### SIMPLE ###
 
