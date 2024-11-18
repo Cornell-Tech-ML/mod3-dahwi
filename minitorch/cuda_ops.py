@@ -543,6 +543,7 @@ def _tensor_matrix_multiply(
     """
     a_batch_stride = a_strides[0] if a_shape[0] > 1 else 0
     b_batch_stride = b_strides[0] if b_shape[0] > 1 else 0
+    # Determine the batch stride for the output tensor
     out_batch_stride = out_strides[0] if out_shape[0] > 1 else 0
     # Batch dimension - fixed
     batch = cuda.blockIdx.z
@@ -554,7 +555,7 @@ def _tensor_matrix_multiply(
     # The final position c[i, j]
     i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
     j = cuda.blockIdx.y * cuda.blockDim.y + cuda.threadIdx.y
-    # The final position c[i, j]
+    # Define the position in the output storage
     pos = batch * out_batch_stride + i * out_strides[-2] + j * out_strides[-1]
     # The local position in the block.
     local_i = cuda.threadIdx.x
@@ -567,8 +568,13 @@ def _tensor_matrix_multiply(
     #    c) Compute the dot produce for position c[i, j]
     acc = 0.0  # Initialize the accumulator for the dot product
 
+    # Iterate over the shared dimension (a_shape[-1]) by block dim
     for k in range(0, a_shape[-1], BLOCK_DIM):
-        # Load a block of data from a_storage into shared memory
+        # Load a block of data from a_storage into shared memory at the current thread position
+        # Guarding: Ensure that both the row index (`i`) is within the valid range of `a_shape[-2]`
+        # (number of rows in matrix `a`) and the column index (`k + local_j`) is within the valid
+        # range of `a_shape[-1]` (number of columns in matrix `a`). Without this check, threads
+        # outside these bounds would try to access invalid memory locations.
         if i < a_shape[-2] and k + local_j < a_shape[-1]:
             a_shared[local_i, local_j] = a_storage[
                 batch * a_batch_stride
@@ -576,6 +582,10 @@ def _tensor_matrix_multiply(
                 + (k + local_j) * a_strides[-1]
             ]
         # Load a block of data from b_storage into shared memory
+        # Guarding: Ensure that the column index (`j`) is within the valid range of `b_shape[-1]`
+        # (number of columns in matrix `b`) and the row index (`k + local_i`) is within the valid
+        # range of `b_shape[-2]` (number of rows in matrix `b`). This ensures that threads don't
+        # read beyond valid memory regions of `b_storage`.
         if j < b_shape[-1] and k + local_i < b_shape[-2]:
             b_shared[local_i, local_j] = b_storage[
                 batch * b_batch_stride
@@ -585,9 +595,13 @@ def _tensor_matrix_multiply(
         cuda.syncthreads()  # Synchronize threads to ensure shared memory is fully loaded
 
         # Compute the dot product for the current block
+        # Guarding: Ensure the indices within the shared memory (`local_k`) are valid for both the
+        # shared dimension of matrix `a` (columns) and matrix `b` (rows). This guarantees that only
+        # valid elements of `a_shared` and `b_shared` are accessed during the dot product computation.
         for local_k in range(BLOCK_DIM):
             if k + local_k < a_shape[-1] and k + local_k < b_shape[-2]:
                 acc += a_shared[local_i, local_k] * b_shared[local_k, local_j]
+
     # Write the computed value to the output storage
     if i < out_shape[-2] and j < out_shape[-1] and pos < out_size:
         out[pos] = acc
