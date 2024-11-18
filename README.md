@@ -309,6 +309,27 @@ No allocation hoisting found
 None
 ```
 
+# Task 3.4: CUDA Matrix Multiplication #
+![Graph](graph.png)
+```
+Timing summary
+Size: 64
+    fast: 0.00307
+    gpu: 0.00566
+Size: 128
+    fast: 0.01456
+    gpu: 0.01317
+Size: 256
+    fast: 0.09175
+    gpu: 0.04845
+Size: 512
+    fast: 0.98641
+    gpu: 0.22776
+Size: 1024
+    fast: 9.95456
+    gpu: 1.04577
+```
+
 # Training #
 ## SMALL (HIDDEN SIZE = 100) ##
 ### SIMPLE ###
